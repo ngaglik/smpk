@@ -63,30 +63,8 @@
           >
             {{ scenario.label }}
           </button>
-          <div class="reg-id-field">
-            <span class="reg-id-label">RegId</span>
-            <TtdkInput
-              v-model="form.reg_id"
-              size="sm"
-              placeholder="Nomor pendaftaran"
-              class="reg-id-input"
-            />
-          </div>
-          <button
-            type="button"
-            class="ttdk-button register-btn"
-            data-variant="secondary"
-            data-size="sm"
-            :disabled="registering"
-            @click="onRegisterEncounter"
-          >
-            {{ registering ? 'Mendaftarkan…' : 'Registrasi Encounter' }}
-          </button>
         </div>
       </section>
-
-      <p v-if="registerError" class="register-feedback register-feedback--error">{{ registerError }}</p>
-      <p v-else-if="registerInfo" class="register-feedback register-feedback--ok">{{ registerInfo }}</p>
 
       <div class="derived-strip">
         <div class="derived-item">
@@ -222,8 +200,20 @@
                   <TtdkField label="Jenis identitas" field="id_jenis">
                     <TtdkSelect v-model="form.id_jenis" :options="idJenisOptions" />
                   </TtdkField>
-                  <TtdkField label="Nomor identitas" field="id_nilai" class="span-2">
-                    <TtdkInput v-model="form.id_nilai" placeholder="Nomor sesuai jenis identitas" />
+                  <TtdkField label="Nomor identitas" field="id_nilai" class="span-2" :error="errors.id_nilai">
+                    <div class="id-input-row">
+                      <TtdkInput v-model="form.id_nilai" class="id-input" placeholder="Nomor sesuai jenis identitas" />
+                      <button
+                        v-if="showNikGenerator"
+                        type="button"
+                        class="ttdk-button"
+                        data-variant="secondary"
+                        data-size="sm"
+                        @click="onGenerateNik"
+                      >
+                        Generator NIK
+                      </button>
+                    </div>
                   </TtdkField>
 
                   <TtdkField label="Nama lengkap" field="nama" required :error="errors.nama" class="span-2">
@@ -309,6 +299,9 @@
                   <TtdkField label="Ruang perawatan" field="kunj_ruang">
                     <TtdkInput v-model="form.kunj_ruang" placeholder="mis. IGD - Bedah" />
                   </TtdkField>
+                  <TtdkField label="RegId" field="reg_id" helper="Nomor pendaftaran untuk registrasi Encounter.">
+                    <TtdkInput v-model="form.reg_id" placeholder="mis. REG-2026-001" />
+                  </TtdkField>
                   <TtdkField label="Dokter penanggung jawab (DPJP)" field="kunj_dpjp" class="span-2">
                     <TtdkInput v-model="form.kunj_dpjp" placeholder="Nama dokter DPJP" />
                   </TtdkField>
@@ -319,7 +312,20 @@
                   <code class="encounter-id-value" :data-empty="form.kunj_id ? 'false' : 'true'">
                     {{ form.kunj_id || 'Belum terdaftar' }}
                   </code>
+                  <button
+                    type="button"
+                    class="ttdk-button encounter-register-btn"
+                    data-variant="secondary"
+                    data-size="sm"
+                    :disabled="registering"
+                    @click="onRegisterEncounter"
+                  >
+                    {{ registering ? 'Mendaftarkan…' : 'Registrasi Encounter' }}
+                  </button>
                 </div>
+
+                <p v-if="registerError" class="register-feedback register-feedback--error">{{ registerError }}</p>
+                <p v-else-if="registerInfo" class="register-feedback register-feedback--ok">{{ registerInfo }}</p>
               </SmpkSection>
 
               <SmpkSection step="3" title="Waktu, Tempat, dan Cara Kematian" subtitle="Menentukan kewajiban pemeriksaan luar jenazah.">
@@ -823,6 +829,7 @@ import { satusehatConfig, satusehatEnvironmentLabel } from './config/satusehat';
 import { postFhir, FhirRequestError } from './services/satusehatFhir';
 import { registerEncounter } from './services/satusehatEncounter';
 import { buildSmpkBundle } from './services/smpkBundle';
+import { buildTanpaNikNik } from './utils/tanpaNik';
 import { generateSkkDocx } from './services/skkDocument';
 import type { OptionItem, SmpkFormState } from './types/smpk';
 
@@ -1312,6 +1319,20 @@ function toggleDasar(code: string, checked: boolean) {
   if (simKeys.has('dasar')) corrections.add('dasar');
 }
 
+function onGenerateNik() {
+  const nik = buildTanpaNikNik(satusehatConfig.orgIdNumeric, form.value.waktu_mati, 1);
+  if (!nik) {
+    errors.id_nilai = 'Kode numerik fasyankes belum diatur (VITE_SATUSEHAT_ORG_ID_NUMERIC).';
+    return;
+  }
+
+  delete errors.id_nilai;
+  form.value.id_jenis = 'nik';
+  form.value.id_nilai = nik;
+  touched.add('id_nilai');
+  if (simKeys.has('id_nilai')) corrections.add('id_nilai');
+}
+
 /* --------------------------------------------------------------- derivation */
 
 const usiaDisplay = computed(() =>
@@ -1349,6 +1370,7 @@ const caraMatiLabel = computed(() => labelOf(caraMatiOptions, form.value.cara_ma
 const showExternal = computed(() => !!form.value.cara_mati && form.value.cara_mati !== '39104002');
 const showJanin = computed(() => derived.value.bayi === true);
 const showMaternal = computed(() => derived.value.perempuan === true);
+const showNikGenerator = computed(() => derived.value.bayi === true);
 
 const caraMatiHelper = computed(() => {
   if (!form.value.cara_mati) return 'Pilih cara kematian untuk melihat kewajiban pemeriksaan luar.';
@@ -2176,29 +2198,23 @@ onMounted(() => {
   gap: 8px;
 }
 
-.register-btn {
-  margin-left: 8px;
+.encounter-register-btn {
+  margin-left: auto;
 }
 
-.reg-id-field {
+.id-input-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.reg-id-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ttdk-content-secondary-body);
-  white-space: nowrap;
-}
-
-.reg-id-input {
-  width: 170px;
+.id-input {
+  flex: 1 1 240px;
 }
 
 .register-feedback {
-  margin: -8px 0 16px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
   word-break: break-word;

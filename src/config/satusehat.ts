@@ -11,6 +11,7 @@ export interface SatusehatConfig {
   consentUrl: string;
   baseUrlKptl: string;
   organizationId: string;
+  orgIdNumeric: string;
   locationId: string;
   clientId: string;
   token: string;
@@ -28,6 +29,7 @@ export const satusehatConfig: SatusehatConfig = {
   consentUrl: env.VITE_SATUSEHAT_CONSENT_URL ?? `${SANDBOX_HOST}/consent/v1`,
   baseUrlKptl: env.VITE_SATUSEHAT_BASE_URL_KPTL ?? `${SANDBOX_HOST}/kptl-api-v1`,
   organizationId: env.VITE_SATUSEHAT_ORG_ID ?? '',
+  orgIdNumeric: env.VITE_SATUSEHAT_ORG_ID_NUMERIC ?? '',
   locationId: env.VITE_SATUSEHAT_LOCATION_ID ?? '',
   clientId: env.VITE_SATUSEHAT_CLIENT_ID ?? '',
   token: env.VITE_SATUSEHAT_TOKEN ?? ''

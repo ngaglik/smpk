@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_SATUSEHAT_BASE_URL_KPTL?: string;
   readonly VITE_SATUSEHAT_CLIENT_ID?: string;
   readonly VITE_SATUSEHAT_ORG_ID?: string;
+  readonly VITE_SATUSEHAT_ORG_ID_NUMERIC?: string;
   readonly VITE_SATUSEHAT_LOCATION_ID?: string;
   readonly VITE_SATUSEHAT_TOKEN?: string;
 }
